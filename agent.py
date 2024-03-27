@@ -4,11 +4,8 @@ import time
 from typing import Literal
 from model import ACModel
 from torch_ac.utils.penv import ParallelEnv
-from utils.other import device
-from utils import other
-from utils import env as envutils
-from utils import storage
-from utils import format
+from utils import device
+import utils
 from config import Config
 import tensorboardX
 
@@ -22,11 +19,11 @@ class Agent:
     - to analyze the feedback (i.e. reward and done state) of its action."""
 
     def __init__(self, env, model_name, argmax=False, num_envs=1, seed=1, use_memory=False, use_text=False):
-        other.seed(seed)
-        self.model_dir = storage.get_model_dir(model_name)
+        utils.seed(seed)
+        self.model_dir = utils.get_model_dir(model_name)
         envs = []
         for i in range(num_envs):
-            envs.append(envutils.make_env(env, seed + 10000 * i))
+            envs.append(utils.make_env(env, seed + 10000 * i))
         self.envs = envs
         self.env = ParallelEnv(envs)
         obs_space, self.preprocess_obss = format.get_obss_preprocessor(self.env.observation_space)
@@ -34,8 +31,8 @@ class Agent:
         self.argmax = argmax
         self.num_envs = num_envs
         self.seed = seed
-        self.txt_logger = storage.get_txt_logger(self.model_dir)
-        self.csv_file, self.csv_logger = storage.get_csv_logger(self.model_dir)
+        self.txt_logger = utils.get_txt_logger(self.model_dir)
+        self.csv_file, self.csv_logger = utils.get_csv_logger(self.model_dir)
         self.tb_writer = tensorboardX.SummaryWriter(self.model_dir)
         if self.acmodel.recurrent:
             self.memories = torch.zeros(self.num_envs, self.acmodel.memory_size, device=device)
@@ -109,8 +106,8 @@ class Agent:
         num_frames = sum(logs["num_frames_per_episode"])
         fps = num_frames / (end_time - start_time)
         duration = int(end_time - start_time)
-        return_per_episode = other.synthesize(logs["return_per_episode"])
-        num_frames_per_episode = other.synthesize(logs["num_frames_per_episode"])
+        return_per_episode = utils.synthesize(logs["return_per_episode"])
+        num_frames_per_episode = utils.synthesize(logs["num_frames_per_episode"])
 
         print("F {} | FPS {:.0f} | D {} | R:μσmM {:.2f} {:.2f} {:.2f} {:.2f} | F:μσmM {:.1f} {:.1f} {} {}"
                 .format(num_frames, fps, duration,
@@ -118,12 +115,12 @@ class Agent:
                         *num_frames_per_episode.values()))
         
     def train(self, frames: int, algo_type: Literal['ppo', 'a2c'], algo_config: Config = Config(), log_interval: int = 1, save_interval: int = 1):
-        txt_logger = storage.get_txt_logger(self.model_dir)
-        csv_file, csv_logger = storage.get_csv_logger(self.model_dir)
+        txt_logger = utils.get_txt_logger(self.model_dir)
+        csv_file, csv_logger = utils.get_csv_logger(self.model_dir)
         tb_writer = tensorboardX.SummaryWriter(self.model_dir)
 
         try:
-            status = storage.get_status(self.model_dir)
+            status = utils.get_status(self.model_dir)
         except OSError:
             status = {"num_frames": 0, "update": 0}
 
@@ -169,9 +166,9 @@ class Agent:
             if update % log_interval == 0:
                 fps = logs["num_frames"] / (update_end_time - update_start_time)
                 duration = int(time.time() - start_time)
-                return_per_episode = other.synthesize(logs["return_per_episode"])
-                rreturn_per_episode = other.synthesize(logs["reshaped_return_per_episode"])
-                num_frames_per_episode = other.synthesize(logs["num_frames_per_episode"])
+                return_per_episode = utils.synthesize(logs["return_per_episode"])
+                rreturn_per_episode = utils.synthesize(logs["reshaped_return_per_episode"])
+                num_frames_per_episode = utils.synthesize(logs["num_frames_per_episode"])
 
                 header = ["update", "frames", "FPS", "duration"]
                 data = [update, num_frames, fps, duration]
@@ -204,5 +201,5 @@ class Agent:
                             "model_state": self.acmodel.state_dict(), "optimizer_state": algo.optimizer.state_dict()}
                 if hasattr(self.preprocess_obss, "vocab"):
                     status["vocab"] = self.preprocess_obss.vocab.vocab
-                storage.save_status(status, self.model_dir)
+                utils.save_status(status, self.model_dir)
                 txt_logger.info("Status saved")
