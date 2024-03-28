@@ -2,11 +2,11 @@ import torch
 import torch_ac
 import time
 from typing import Literal
-from model import ACModel
+from .model import ACModel
 from torch_ac.utils.penv import ParallelEnv
-from utils import device
-import utils
-from config import Config
+from torch_ac_simple.utils import device
+import torch_ac_simple.utils as utils
+from .config import Config
 import tensorboardX
 
 

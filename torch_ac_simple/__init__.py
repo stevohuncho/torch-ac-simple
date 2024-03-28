@@ -1,3 +1,3 @@
-from torch_ac_simple.agent import Agent
-from torch_ac_simple.model import ACModel
-from torch_ac_simple.config import Config
+from .agent import Agent
+from .model import ACModel
+from .config import Config
