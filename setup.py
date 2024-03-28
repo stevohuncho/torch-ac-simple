@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='torch_ac_simple',
-    version='0.1.34',
+    version='0.2.0',
     author='Stevo Huncho',
     author_email='stevo@stevohuncho.com',
     description='Simple implementation of A2C and PPO using PyTorch',

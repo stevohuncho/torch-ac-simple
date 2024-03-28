@@ -45,8 +45,8 @@ def get_model_state(model_dir):
     return get_status(model_dir)["model_state"]
 
 
-def get_txt_logger(model_dir, filename="log.txt"):
-    path = os.path.join(model_dir, filename)
+def get_txt_logger(model_dir, filename="log"):
+    path = os.path.join(model_dir, filename+".txt")
     create_folders_if_necessary(path)
 
     logging.basicConfig(
@@ -61,8 +61,8 @@ def get_txt_logger(model_dir, filename="log.txt"):
     return logging.getLogger()
 
 
-def get_csv_logger(model_dir, filename="log.csv"):
-    csv_path = os.path.join(model_dir, filename)
+def get_csv_logger(model_dir, filename="log"):
+    csv_path = os.path.join(model_dir, filename+".csv")
     create_folders_if_necessary(csv_path)
     csv_file = open(csv_path, "a")
     return csv_file, csv.writer(csv_file)

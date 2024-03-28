@@ -1,6 +1,7 @@
 import torch
 import torch_ac
 import time
+import os
 from typing import Literal
 from .model import ACModel
 from torch_ac.utils.penv import ParallelEnv
@@ -26,14 +27,11 @@ class Agent:
             envs.append(utils.make_env(env, seed + 10000 * i))
         self.envs = envs
         self.env = ParallelEnv(envs)
-        obs_space, self.preprocess_obss = format.get_obss_preprocessor(self.env.observation_space)
+        obs_space, self.preprocess_obss = utils.get_obss_preprocessor(self.env.observation_space)
         self.acmodel = ACModel(obs_space, self.env.action_space, use_memory=use_memory, use_text=use_text)
         self.argmax = argmax
         self.num_envs = num_envs
         self.seed = seed
-        self.txt_logger = utils.get_txt_logger(self.model_dir)
-        self.csv_file, self.csv_logger = utils.get_csv_logger(self.model_dir)
-        self.tb_writer = tensorboardX.SummaryWriter(self.model_dir)
         if self.acmodel.recurrent:
             self.memories = torch.zeros(self.num_envs, self.acmodel.memory_size, device=device)
 
@@ -64,7 +62,9 @@ class Agent:
     def analyze_feedback(self, reward, done):
         return self.analyze_feedbacks([reward], [done])
     
-    def eval(self, eps: int):
+    def eval(self, eps: int, logname: str = "eval"):
+        csv_file, csv_logger = utils.get_csv_logger(self.model_dir, logname)
+        
         # Load environments
         print("Environments loaded\n")
 
@@ -108,6 +108,18 @@ class Agent:
         duration = int(end_time - start_time)
         return_per_episode = utils.synthesize(logs["return_per_episode"])
         num_frames_per_episode = utils.synthesize(logs["num_frames_per_episode"])
+
+        header = ["frames", "FPS", "duration"]
+        data = [num_frames, fps, duration]
+        header += ["return_" + key for key in return_per_episode.keys()]
+        data += return_per_episode.values()
+        header += ["num_frames_" + key for key in num_frames_per_episode.keys()]
+        data += num_frames_per_episode.values()
+
+        if os.stat(csv_file.name).st_size == 0:
+            csv_logger.writerow(header)
+        csv_logger.writerow(data)
+        csv_file.flush()
 
         print("F {} | FPS {:.0f} | D {} | R:μσmM {:.2f} {:.2f} {:.2f} {:.2f} | F:μσmM {:.1f} {:.1f} {} {}"
                 .format(num_frames, fps, duration,
