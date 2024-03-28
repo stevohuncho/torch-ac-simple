@@ -114,9 +114,9 @@ class Agent:
                         *return_per_episode.values(),
                         *num_frames_per_episode.values()))
         
-    def train(self, frames: int, algo_type: Literal['ppo', 'a2c'], algo_config: Config = Config(), log_interval: int = 1, save_interval: int = 1):
-        txt_logger = utils.get_txt_logger(self.model_dir)
-        csv_file, csv_logger = utils.get_csv_logger(self.model_dir)
+    def train(self, frames: int, algo_type: Literal['ppo', 'a2c'], algo_config: Config = Config(), log_interval: int = 1, save_interval: int = 1, logname: str = "train"):
+        txt_logger = utils.get_txt_logger(self.model_dir, logname)
+        csv_file, csv_logger = utils.get_csv_logger(self.model_dir, logname)
         tb_writer = tensorboardX.SummaryWriter(self.model_dir)
 
         try:
